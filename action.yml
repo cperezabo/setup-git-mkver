@@ -1,0 +1,24 @@
+name: "Setup git-mkver"
+description: "It downloads and installs git-mkver"
+branding:
+  icon: "settings"
+  color: "purple"
+inputs:
+  version:
+    description: "The git-mkver version to install"
+    required: false
+    default: "latest"
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        if [[ "${{ inputs.version }}" == "latest" ]]; then
+          TAG_NAME=$(curl -s https://api.github.com/repos/idc101/git-mkver/releases/latest | jq -r '.tag_name')
+          VERSION="${TAG_NAME//v/}"
+        else
+          VERSION="${{ inputs.version }}"
+        fi
+
+        curl -L "https://github.com/idc101/git-mkver/releases/download/v$VERSION/git-mkver-linux-amd64-$VERSION.tar.gz" | tar xvz
+        sudo mv git-mkver /usr/local/bin
+      shell: bash
