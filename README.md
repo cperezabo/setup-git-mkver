@@ -1,4 +1,4 @@
-![GitHub Actions CI](https://github.com/cperezabo/setup-git-mkver/actions/workflows/ci.yml/badge.svg)
+[![GitHub Actions CI](https://github.com/cperezabo/setup-git-mkver/actions/workflows/ci.yml/badge.svg)](https://github.com/cperezabo/setup-git-mkver/actions/workflows/ci.yml)
 
 # Setup git-mkver for GitHub Actions
 
