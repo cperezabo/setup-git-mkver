@@ -2,20 +2,26 @@ name: CI
 on: push
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, windows-2019]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - name: Test with latest version
         uses: ./
-      - run: |
+      - name: Assert latest version installed
+        run: |
           TAG_NAME=$(curl -s https://api.github.com/repos/idc101/git-mkver/releases/latest | jq -r '.tag_name')
           VERSION="${TAG_NAME//v/}"
-          
           [[ $(git mkver | grep -o "$VERSION") == "$VERSION" ]] || exit 1
-          
+        shell: bash
       - name: Test with specific version
         uses: ./
         with:
           version: "1.1.1"
-      - run: |
+      - name: Assert specific version installed
+        run: |
           [[ $(git mkver | grep -o "1.1.1") == "1.1.1" ]] || exit 1
+        shell: bash

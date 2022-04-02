@@ -19,6 +19,16 @@ runs:
           VERSION="${{ inputs.version }}"
         fi
 
-        curl -L "https://github.com/idc101/git-mkver/releases/download/v$VERSION/git-mkver-linux-amd64-$VERSION.tar.gz" | tar xvz
-        sudo mv git-mkver /usr/local/bin
+        PLATFORM=$(echo $RUNNER_OS | awk '{print tolower($0)}')
+
+        if [[ "$PLATFORM" == "linux" ]]; then
+          curl -L "https://github.com/idc101/git-mkver/releases/download/v$VERSION/git-mkver-linux-amd64-$VERSION.tar.gz" | tar xvz
+          sudo mv git-mkver /usr/local/bin
+        elif [[ "$PLATFORM" == "windows" ]]; then
+          ZIP_FILENAME="git-mkver-windows-amd64-$VERSION.zip"
+          curl -LO "https://github.com/idc101/git-mkver/releases/download/v$VERSION/$ZIP_FILENAME"
+          unzip "$ZIP_FILENAME"
+          rm "$ZIP_FILENAME"
+          mv git-mkver.exe /c/Windows/System32
+        fi
       shell: bash
