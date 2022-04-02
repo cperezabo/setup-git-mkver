@@ -25,3 +25,15 @@ jobs:
         run: |
           [[ $(git mkver | grep -o "1.1.1") == "1.1.1" ]] || exit 1
         shell: bash
+  tag:
+    needs: test
+    runs-on: ubuntu-20.04
+    # if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: fregante/setup-git-user@v1
+      - uses: ./
+      - run: git mkver tag
+      - run: git push origin --tags
