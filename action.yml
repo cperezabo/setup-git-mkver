@@ -12,23 +12,50 @@ runs:
   using: "composite"
   steps:
     - run: |
-        if [[ "${{ inputs.version }}" == "latest" ]]; then
-          TAG_NAME=$(curl -s https://api.github.com/repos/idc101/git-mkver/releases/latest | jq -r '.tag_name')
-          VERSION="${TAG_NAME//v/}"
+        if [[ "$VERSION" == "latest" ]]; then
+          VERSION=$(curl -s https://api.github.com/repos/idc101/git-mkver/releases/latest | jq -r '.tag_name |= (sub("v";"")) | .tag_name')
+        fi
+
+        GIT_MKVER_DIR_LINUX="$HOME/.git-mkver"
+
+        RELEASES_DOWNLOAD_BASE_URL="https://github.com/idc101/git-mkver/releases/download/v$VERSION"
+
+        clean() {
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            rm -rf /c/Windows/System32/git-mkver.exe
+          else
+            rm -rf $GIT_MKVER_DIR_LINUX
+          fi
+        }
+
+        download_and_unzip() {
+          ASSET_NAME="$1"
+          DST_DIRECTORY="$2"
+          curl -LO "$RELEASES_DOWNLOAD_BASE_URL/$ASSET_NAME"
+          unzip "$ASSET_NAME" -d "$DST_DIRECTORY"
+          rm "$ASSET_NAME"
+        }
+
+        clean
+
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          download_and_unzip "git-mkver-windows-amd64-$VERSION.zip" /c/Windows/System32
         else
-          VERSION="${{ inputs.version }}"
+          if [[ "$VERSION" < "1.3.0" ]]; then
+            curl -L "$RELEASES_DOWNLOAD_BASE_URL/git-mkver-linux-amd64-$VERSION.tar.gz" | tar xvz
+            mkdir -p $GIT_MKVER_DIR_LINUX/bin
+            mv git-mkver "$GIT_MKVER_DIR_LINUX/bin"
+            chmod +x "$GIT_MKVER_DIR_LINUX/bin/git-mkver"
+          else
+            download_and_unzip "git-mkver-$VERSION.zip" .
+            rm -rf $GIT_MKVER_DIR_LINUX
+            mv "git-mkver-$VERSION" "$GIT_MKVER_DIR_LINUX"
+          fi
         fi
+      env:
+        VERSION: ${{ inputs.version }}
+      shell: bash
 
-        PLATFORM=$(echo $RUNNER_OS | awk '{print tolower($0)}')
-
-        if [[ "$PLATFORM" == "linux" ]]; then
-          curl -L "https://github.com/idc101/git-mkver/releases/download/v$VERSION/git-mkver-linux-amd64-$VERSION.tar.gz" | tar xvz
-          sudo mv git-mkver /usr/local/bin
-        elif [[ "$PLATFORM" == "windows" ]]; then
-          ZIP_FILENAME="git-mkver-windows-amd64-$VERSION.zip"
-          curl -LO "https://github.com/idc101/git-mkver/releases/download/v$VERSION/$ZIP_FILENAME"
-          unzip "$ZIP_FILENAME"
-          rm "$ZIP_FILENAME"
-          mv git-mkver.exe /c/Windows/System32
-        fi
+    - run: echo "${HOME}/.git-mkver/bin" >> $GITHUB_PATH
+      if: ${{ runner.os != 'Windows' }}
       shell: bash

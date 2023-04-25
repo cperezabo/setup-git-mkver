@@ -5,32 +5,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2019]
+        os: [ubuntu-20.04, ubuntu-latest, windows-2019]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - name: Test with latest version
-        uses: ./
-      - name: Assert latest version installed
-        run: |
-          TAG_NAME=$(curl -s https://api.github.com/repos/idc101/git-mkver/releases/latest | jq -r '.tag_name')
-          VERSION="${TAG_NAME//v/}"
-          [[ $(git mkver | grep -o "$VERSION") == "$VERSION" ]] || exit 1
-        shell: bash
-      - name: Test with specific version
+      - uses: actions/checkout@v3
+      - name: Setup specific version (specially one prior to v1.3.0)
         uses: ./
         with:
-          version: "1.1.1"
-      - name: Assert specific version installed
+          version: "1.2.2"
+      - name: Assert that specific version is installed
         run: |
-          [[ $(git mkver | grep -o "1.1.1") == "1.1.1" ]] || exit 1
+          [[ $(git mkver | grep -o "1.2.2") == "1.2.2" ]] || exit 1
+        shell: bash
+      - name: Setup latest git-mkver version
+        uses: ./
+      - name: Assert that latest version is installed
+        run: |
+          VERSION=$(curl -s https://api.github.com/repos/idc101/git-mkver/releases/latest | jq -r '.tag_name |= (sub("v";"")) | .tag_name')
+          [[ $(git mkver | grep -o "$VERSION") == "$VERSION" ]] || exit 1
         shell: bash
   tag:
     needs: test
     runs-on: ubuntu-20.04
-    # if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - uses: fregante/setup-git-user@v1
